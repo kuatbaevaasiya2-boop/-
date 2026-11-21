@@ -194,6 +194,30 @@ def icon_strokes(name):
                          (0.38, 0.9), (0.24, 0.78), (0.18, 0.58), (0.26, 0.4), (0.34, 0.5), (0.38, 0.3), (0.5, 0.06)]), g, 1.0),
               (np.array([(0.5, 0.5), (0.6, 0.64), (0.62, 0.76), (0.5, 0.86), (0.38, 0.76), (0.42, 0.62), (0.5, 0.5)]), "w", 0.7)]
         S += [(p, g, 0.7) for p in _arrow(0.82, 0.32, 0.94, 0.12, 0.05)]
+    elif name == "target":
+        S += [(_arc(0.46, 0.54, 0.38), g, 1.0), (_arc(0.46, 0.54, 0.25), g, 0.9), (_arc(0.46, 0.54, 0.11), g, 0.9)]
+        S += [(_ln((0.46, 0.54), (0.86, 0.14)), "w", 0.8), (_ln((0.86, 0.14), (0.86, 0.04)), g, 0.7), (_ln((0.86, 0.14), (0.96, 0.14)), g, 0.7),
+              (_ln((0.80, 0.20), (0.80, 0.10)), g, 0.6), (_ln((0.80, 0.20), (0.90, 0.20)), g, 0.6)]
+    elif name == "eye":
+        S += [(_bezier((0.06, 0.5), (0.5, 0.08), (0.94, 0.5)), g, 1.0), (_bezier((0.06, 0.5), (0.5, 0.92), (0.94, 0.5)), g, 1.0),
+              (_arc(0.5, 0.5, 0.16), g, 1.0), (_arc(0.5, 0.5, 0.06), "w", 0.9)]
+        for a in (-60, -90, -120):
+            r = math.radians(a)
+            S.append((_ln((0.5 + 0.34 * math.cos(r), 0.42 + 0.34 * math.sin(r)), (0.5 + 0.44 * math.cos(r), 0.42 + 0.44 * math.sin(r))), g, 0.6))
+    elif name == "tag":
+        S += [(_closed((0.12, 0.5), (0.42, 0.18), (0.86, 0.18), (0.86, 0.82), (0.42, 0.82)), g, 1.0), (_arc(0.34, 0.5, 0.05), g, 0.8),
+              (_ln((0.56, 0.62), (0.74, 0.38)), "w", 0.8), (_arc(0.57, 0.39, 0.04), g, 0.7), (_arc(0.73, 0.61, 0.04), g, 0.7)]
+    elif name == "chart":
+        S += [(_ln((0.1, 0.1), (0.1, 0.9), (0.92, 0.9)), g, 0.8)]
+        for x, h in ((0.22, 0.2), (0.4, 0.34), (0.58, 0.48), (0.76, 0.64)):
+            S.append((_rrect(x - 0.06, 0.88 - h, x + 0.06, 0.88, 0.01), g, 0.8))
+        S += [(_ln((0.16, 0.6), (0.4, 0.44), (0.56, 0.5), (0.86, 0.16)), "w", 0.8)]
+        S += [(p, "w", 0.8) for p in _arrow(0.74, 0.28, 0.88, 0.14, 0.05)][1:]
+    elif name == "cursor":
+        S += [(_closed((0.3, 0.16), (0.3, 0.8), (0.45, 0.66), (0.56, 0.9), (0.66, 0.85), (0.55, 0.62), (0.75, 0.6)), g, 1.0)]
+        for a in (200, 240, 280, 320):
+            r = math.radians(a)
+            S.append((_ln((0.3 + 0.12 * math.cos(r), 0.16 + 0.12 * math.sin(r)), (0.3 + 0.2 * math.cos(r), 0.16 + 0.2 * math.sin(r))), "w", 0.6))
     return S
 
 
@@ -713,8 +737,14 @@ class Renderer:
                         s["card_items"].append({"w": m_.group(2), "a": False})
             n = len(s["card_items"])
             shown = n if t - st > 0.9 else max(1, int(n * (t - st + 0.1) / 0.9))
-            im = self.cached(s, ("card", shown), lambda: text_block(s["card_items"], shown, 86, 860))
-            self.blend(fr, im, (W - im[1].shape[1]) / 2, 360 + dy, al)
+            nob = "button" in sc and not sc["button"]
+            im = self.cached(s, ("card", shown), lambda: text_block(s["card_items"], shown, 110 if nob else 86, 860))
+            self.blend(fr, im, (W - im[1].shape[1]) / 2, (560 if nob else 360) + dy, al)
+            if nob:  # батырмасыз: тек карточка + толқын
+                if t - st > 0.9:
+                    self.ring(fr, W / 2, 560 + im[1].shape[0] / 2, 420, (t - st - 0.9) % 1.6, GOLD_BGR, 1.3)
+                self.subtitles(fr, s, t, 1270, al)
+                return self.fx(fr, t)
             bt = self.cached(s, "btn", lambda: button_img(sc.get("button", "Подробнее")))
             pk = M.ease((t - st - 0.8) / 0.35)
             pulse = 1 + 0.04 * math.sin((t - st) * 5.5)
