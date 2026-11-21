@@ -2,7 +2,7 @@
  "name": "claude-sabaq",
  "lang": "kk",
  "look": "altyn",
- "voice": {"engine": "piper", "speaker": 0, "speed": 1.0},
+ "voice": {"engine": "piper", "speaker": 0, "speed": 1.18},
  "theme": {"bg1": "#06102A", "bg2": "#020611", "accent": "#FF8A1F"},
  "chips": ["CLAUDE", "НӘТИЖЕ", "ИИ", "САБАҚ"],
  "watermark": "@asiya.tg",
