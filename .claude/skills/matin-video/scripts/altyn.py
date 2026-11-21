@@ -5,7 +5,8 @@
   icon   — иконка аты (ICONS ішінен), label — иконка үстіндегі шағын жазу
   chip   — қай бөлім белсенді (plan["chips"] индексі)
   bg     — "navy" (әдепкі) | "warm" | "teal" | "night"
-  kind   — hook | say | features | places | cta
+  kind   — hook | say | features | places | price | cta
+  price  — old, new (бағалар), label, badge; маңызды *сөз* айтылғанда жаңа баға шығады
   items  — features/places үшін: [{"icon", "label", "word"}] (word айтылғанда иконка жанады)
 """
 import math
@@ -22,6 +23,17 @@ import montazh as M
 W, H, FPS = M.W, M.H, M.FPS
 MONO = "/usr/share/fonts/truetype/jetbrains-mono/JetBrainsMono-Bold.ttf"
 GOLD_BGR = (58, 183, 242)
+GOLD_RGB = (242, 183, 58)
+
+
+def set_accent(hexcol):
+    """theme.accent — алтын орнына басқа түс (мысалы оранж)."""
+    global GOLD_BGR, GOLD_RGB
+    if not hexcol:
+        return
+    h = hexcol.lstrip("#")
+    GOLD_RGB = tuple(int(h[i:i + 2], 16) for i in (0, 2, 4))
+    GOLD_BGR = GOLD_RGB[::-1]
 RED_BGR = (80, 80, 240)
 WHITE_BGR = (245, 240, 235)
 
@@ -154,6 +166,34 @@ def icon_strokes(name):
               (_ln((0.13, 0.64), (0.87, 0.64)), g, 0.5), (_ln((0.13, 0.64), (0.42, 0.64)), "w", 0.9), (_arc(0.42, 0.64, 0.02), "w", 0.9),
               (_ln((0.2, 0.95), (0.36, 0.95), (0.36, 0.88), (0.52, 0.88), (0.52, 0.81), (0.68, 0.81), (0.68, 0.76)), g, 0.8)]
         S += [(p, g, 0.8) for p in _arrow(0.72, 0.95, 0.86, 0.79, 0.04)]
+    elif name == "clock_x":
+        S += [(_arc(0.5, 0.52, 0.34), g, 1.0), (_ln((0.5, 0.52), (0.5, 0.30)), g, 1.0), (_ln((0.5, 0.52), (0.66, 0.60)), g, 0.9),
+              (_ln((0.38, 0.1), (0.62, 0.1)), g, 0.8), (_ln((0.5, 0.1), (0.5, 0.18)), g, 0.8)]
+        for k in range(12):
+            a = math.radians(k * 30)
+            S.append((_ln((0.5 + 0.29 * math.cos(a), 0.52 + 0.29 * math.sin(a)), (0.5 + 0.32 * math.cos(a), 0.52 + 0.32 * math.sin(a))), g, 0.5))
+        S += [(_arc(0.5, 0.52, 0.46, a0=-135, a1=225), "r", 1.2), (_ln((0.18, 0.2), (0.82, 0.84)), "r", 1.2)]
+    elif name == "people":
+        for cx, sc_ in ((0.3, 0.75), (0.7, 0.75), (0.5, 1.0)):
+            S += [(_arc(cx, 0.42 - 0.04 * sc_, 0.1 * sc_), g, 0.9 * sc_),
+                  (_arc(cx, 0.78, 0.2 * sc_, 0.17 * sc_, 180, 360), g, 0.9 * sc_)]
+        S += [(_ln((0.78, 0.14), (0.78, 0.30)), "w", 0.9), (_ln((0.70, 0.22), (0.86, 0.22)), "w", 0.9)]
+    elif name == "coins":
+        for k, y in enumerate((0.78, 0.66, 0.54)):
+            S += [(_arc(0.38, y, 0.24, 0.07), g, 0.9), (_ln((0.14, y), (0.14, y + 0.08)), g, 0.7), (_ln((0.62, y), (0.62, y + 0.08)), g, 0.7)]
+        S += [(_arc(0.7, 0.32, 0.18), g, 1.0), (_ln((0.63, 0.25), (0.77, 0.25)), g, 0.8), (_ln((0.63, 0.30), (0.77, 0.30)), g, 0.8),
+              (_ln((0.7, 0.30), (0.7, 0.42)), g, 0.8)]
+    elif name == "hourglass":
+        S += [(_ln((0.24, 0.08), (0.76, 0.08)), g, 1.1), (_ln((0.24, 0.92), (0.76, 0.92)), g, 1.1),
+              (_bezier((0.3, 0.08), (0.3, 0.42), (0.48, 0.5)), g, 1.0), (_bezier((0.7, 0.08), (0.7, 0.42), (0.52, 0.5)), g, 1.0),
+              (_bezier((0.48, 0.5), (0.3, 0.58), (0.3, 0.92)), g, 1.0), (_bezier((0.52, 0.5), (0.7, 0.58), (0.7, 0.92)), g, 1.0),
+              (_ln((0.38, 0.28), (0.62, 0.28)), g, 0.6), (_ln((0.5, 0.52), (0.5, 0.78)), "w", 0.5),
+              (_closed((0.36, 0.88), (0.5, 0.76), (0.64, 0.88)), g, 0.7)]
+    elif name == "fire":
+        S += [(np.array([(0.5, 0.06), (0.62, 0.24), (0.76, 0.38), (0.82, 0.58), (0.76, 0.78), (0.62, 0.9), (0.5, 0.93),
+                         (0.38, 0.9), (0.24, 0.78), (0.18, 0.58), (0.26, 0.4), (0.34, 0.5), (0.38, 0.3), (0.5, 0.06)]), g, 1.0),
+              (np.array([(0.5, 0.5), (0.6, 0.64), (0.62, 0.76), (0.5, 0.86), (0.38, 0.76), (0.42, 0.62), (0.5, 0.5)]), "w", 0.7)]
+        S += [(p, g, 0.7) for p in _arrow(0.82, 0.32, 0.94, 0.12, 0.05)]
     return S
 
 
@@ -223,7 +263,7 @@ def text_block(items, shown, px, maxw, hl=(), align="center", hide_future=True, 
                 a = 255 if on else 70
                 if items[i].get("a") or i in hl:
                     d.rounded_rectangle([x - 10, y + px * 0.12, x + ws[i] + 10, y + px * 1.2], 10,
-                                        fill=(242, 183, 58, a))
+                                        fill=GOLD_RGB + (a,))
                     d.text((x, y), words[i], font=f, fill=(18, 16, 24, a))
                 else:
                     d.text((x, y), words[i], font=f, fill=(255, 255, 255, a))
@@ -234,7 +274,8 @@ def text_block(items, shown, px, maxw, hl=(), align="center", hide_future=True, 
     return Image.alpha_composite(sh.filter(ImageFilter.GaussianBlur(8)), img)
 
 
-def mono_label(text, px=30, col=(242, 183, 58), spacing=0.18, a=255):
+def mono_label(text, px=30, col=None, spacing=0.18, a=255):
+    col = GOLD_RGB if col is None else col
     f = font(px, mono=True)
     tw = sum(f.getlength(c) for c in text) + px * spacing * (len(text) - 1)
     img = Image.new("RGBA", (int(tw) + 20, int(px * 1.5)), (0, 0, 0, 0))
@@ -265,15 +306,36 @@ def chips_img(chips, active):
     for i, (t, w) in enumerate(parts):
         box = [x, 4, x + w, 4 + hgt]
         if i == active:
-            d.rounded_rectangle(box, hgt // 2, fill=(242, 183, 58, 255))
+            d.rounded_rectangle(box, hgt // 2, fill=GOLD_RGB + (255,))
             d.text((x + padx, 11), t, font=f, fill=(18, 16, 24, 255))
         elif i < active:
-            d.rounded_rectangle(box, hgt // 2, outline=(242, 183, 58, 200), width=2)
-            d.text((x + padx, 11), t, font=f, fill=(242, 183, 58, 220))
+            d.rounded_rectangle(box, hgt // 2, outline=GOLD_RGB + (200,), width=2)
+            d.text((x + padx, 11), t, font=f, fill=GOLD_RGB + (220,))
         else:
             d.rounded_rectangle(box, hgt // 2, outline=(255, 255, 255, 70), width=2)
             d.text((x + padx, 11), t, font=f, fill=(255, 255, 255, 90))
         x += w + gap
+    return img
+
+
+def big_text(text, px, col):
+    f = font(px, 900)
+    tw = f.getlength(text)
+    img = Image.new("RGBA", (int(tw) + 80, int(px * 1.4) + 40), (0, 0, 0, 0))
+    gl = Image.new("RGBA", img.size, (0, 0, 0, 0))
+    ImageDraw.Draw(gl).text((40, 20), text, font=f, fill=col + (150,))
+    img = Image.alpha_composite(img, gl.filter(ImageFilter.GaussianBlur(px / 8)))
+    ImageDraw.Draw(img).text((40, 20), text, font=f, fill=col + (255,))
+    return img
+
+
+def chip_badge(text):
+    f = font(40, 900)
+    tw = f.getlength(text)
+    img = Image.new("RGBA", (int(tw) + 80, 84), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    d.rounded_rectangle([4, 4, tw + 76, 80], 38, fill=(255, 255, 255, 255))
+    d.text((40, 14), text, font=f, fill=(18, 16, 24, 255))
     return img
 
 
@@ -283,10 +345,10 @@ def button_img(label):
     bw, bh = int(tw + 140), 130
     img = Image.new("RGBA", (bw + 100, bh + 100), (0, 0, 0, 0))
     gl = Image.new("RGBA", img.size, (0, 0, 0, 0))
-    ImageDraw.Draw(gl).rounded_rectangle([50, 50, 50 + bw, 50 + bh], 65, fill=(242, 183, 58, 200))
+    ImageDraw.Draw(gl).rounded_rectangle([50, 50, 50 + bw, 50 + bh], 65, fill=GOLD_RGB + (200,))
     img = Image.alpha_composite(img, gl.filter(ImageFilter.GaussianBlur(26)))
     d = ImageDraw.Draw(img)
-    d.rounded_rectangle([50, 50, 50 + bw, 50 + bh], 65, fill=(242, 183, 58, 255))
+    d.rounded_rectangle([50, 50, 50 + bw, 50 + bh], 65, fill=GOLD_RGB + (255,))
     d.text((50 + (bw - tw) / 2, 50 + (bh - 64 * 1.25) / 2), label, font=f, fill=(18, 16, 24, 255))
     return img
 
@@ -327,6 +389,7 @@ BGS = {
 class Renderer:
     def __init__(self, plan, tl):
         self.plan, self.tl = plan, tl
+        set_accent(plan.get("theme", {}).get("accent"))
         self.scenes = []
         chips = plan.get("chips", [])
         self.chips = chips
@@ -474,7 +537,8 @@ class Renderer:
             lay = cv2.resize(lay, None, fx=sc, fy=sc, interpolation=cv2.INTER_LINEAR)
         self.add(fr, lay, cx, cy, alpha)
 
-    def ring(self, fr, cx, cy, r0, since, col=GOLD_BGR, dur=0.9):
+    def ring(self, fr, cx, cy, r0, since, col=None, dur=0.9):
+        col = GOLD_BGR if col is None else col
         """Кеңейіп сөнетін толқын."""
         if since is None or since < 0 or since > dur:
             return
@@ -548,7 +612,7 @@ class Renderer:
             self.blend(fr, im, (W - im[1].shape[1]) / 2, 330 + dy, al)
             top = 330 + im[1].shape[0]
             if sc.get("label"):
-                lb = self.cached(s, "label", lambda: mono_label(sc["label"], 30, (255, 110, 100) if sc["label"].startswith("✕") else (242, 183, 58)))
+                lb = self.cached(s, "label", lambda: mono_label(sc["label"], 30, (255, 110, 100) if sc["label"].startswith("✕") else GOLD_RGB))
                 self.blend(fr, lb, (W - lb[1].shape[1]) / 2, top + 30, al * M.ease((t - s["kw_t"]) / 0.3))
             lay = self.icon(sc["icon"], 520, st + 0.1, t, 1.2, t_red=s["kw_t"])
             pk, since = self.punch(s, t)
@@ -600,17 +664,44 @@ class Renderer:
                     fl = 6 * math.sin(t * 2.4 + x * 0.01)
                     self.add_scaled(fr, self.icon(it["icon"], size, it["_t"] - 0.1, t, 0.6), x, y2 - (1 - pop) * 20 + fl, al, bnc)
                     self.ring(fr, x, y2, size * 0.75, t - it["_t"])
-                    lab = self.cached(s, ("lab1", it["label"]), lambda it=it: mono_label(it["label"], 24, (242, 183, 58), 0.1))
+                    lab = self.cached(s, ("lab1", it["label"]), lambda it=it: mono_label(it["label"], 24, GOLD_RGB, 0.1))
                 lw_ = lab[1].shape[1]
                 if lw_ > size + 10 and " " in it["label"]:  # ұзын жазу — екі жол
                     a, b = it["label"].rsplit(" ", 1)
                     for j, part in enumerate((a, b)):
                         l2 = self.cached(s, ("lab", on, part), lambda part=part, on=on: mono_label(
-                            part, 24, (242, 183, 58) if on else (255, 255, 255), 0.1, 255 if on else 80))
+                            part, 24, GOLD_RGB if on else (255, 255, 255), 0.1, 255 if on else 80))
                         self.blend(fr, l2, x - l2[1].shape[1] / 2, y2 + size / 2 + 8 + j * 36, al)
                 else:
                     self.blend(fr, lab, x - lw_ / 2, y2 + size / 2 + 8, al)
             self.subtitles(fr, s, t, 1270, al)
+        elif kind == "price":
+            if sc.get("label"):
+                lb = self.cached(s, "label", lambda: mono_label(sc["label"], 30))
+                self.blend(fr, lb, (W - lb[1].shape[1]) / 2, 420 + dy, al)
+            kt = s["kw_t"]
+            old = self.cached(s, "old", lambda: big_text(sc["old"], 130, (255, 255, 255)))
+            ow, oh = old[1].shape[1], old[1].shape[0]
+            ox, oy = (W - ow) / 2, 560 + dy
+            self.blend(fr, old, ox, oy, al * (0.55 if t > kt else 1.0))
+            u = M.ease((t - st - 0.6) / 0.35)
+            if u > 0:
+                x1 = int(ox + 20 + (ow - 40) * u)
+                cv2.line(fr, (int(ox + 20), int(oy + oh * 0.55)), (x1, int(oy + oh * 0.45)), RED_BGR, 14, cv2.LINE_AA)
+            if t >= kt - 0.05:
+                pop = M.ease((t - kt + 0.05) / 0.3)
+                bnc = 1 + 0.25 * math.exp(-(t - kt) * 5) * math.cos((t - kt) * 12) if t > kt else 1.0
+                new = self.cached(s, "new", lambda: big_text(sc["new"], 220, GOLD_RGB))
+                rgb, a = new
+                sc_ = max(0.05, pop * bnc)
+                sz = (int(a.shape[1] * sc_), int(a.shape[0] * sc_))
+                self.blend(fr, (cv2.resize(rgb, sz), cv2.resize(a, sz)[:, :, None]), (W - sz[0]) / 2, 960 - sz[1] / 2 + dy, al)
+                self.ring(fr, W / 2, 960, 420, t - kt)
+                self.ring(fr, W / 2, 960, 340, t - kt - 0.15)
+                if sc.get("badge"):
+                    bd = self.cached(s, "badge", lambda: chip_badge(sc["badge"]))
+                    self.blend(fr, bd, (W - bd[1].shape[1]) / 2, 1110 + dy, al * M.ease((t - kt - 0.2) / 0.3))
+            self.subtitles(fr, s, t, 1300, al)
         elif kind == "cta":
             card = sc.get("card") or sc["text"]
             if "card_items" not in s:

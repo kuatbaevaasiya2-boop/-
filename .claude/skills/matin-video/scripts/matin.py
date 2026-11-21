@@ -725,7 +725,8 @@ def cmd_raskadrovka(a):
     r = make_renderer(plan, tl)
     frames, labels = [], []
     for sc, t in zip(plan["scenes"], tl["scenes"]):
-        for tt in (t["s"] + (t["speech_e"] - t["s"]) * 0.8,):
+        tt0 = t["e"] - 0.3 if sc.get("kind") == "cta" else t["s"] + (t["speech_e"] - t["s"]) * 0.8  # cta: батырма шыққан соң
+        for tt in (tt0,):
             fr = r.frame(tt)
             M.guides(fr)
             frames.append(fr)
