@@ -1,0 +1,27 @@
+{
+ "name": "sabaq-mult",
+ "style": "mult",
+ "character": "mysyk",
+ "audio": ".matin/sabaq-target/voice.wav",
+ "audio_orig": ".matin/sabaq-target/voice.wav",
+ "watermark": "@asiya.tg",
+ "cover": "Claude-пен видео *5 минутта*",
+ "clips": [
+  {"clip": ".matin/src/claude-sabaq_v2.mp4", "from": 0.3},
+  {"clip": ".matin/src/target_v1.mp4", "from": 1.0},
+  {"clip": ".matin/src/ai-bolinui-kz_v1.mp4", "from": 33.0}
+ ],
+ "scenes": [
+  {"card": "phones", "label": "Claude жасаған видеолар", "pose": "wave",
+   "text": "Осындай видеоларды Claude-пен *5-ақ минутта* жасап үйренгің келе ма?"},
+  {"card": "phones", "label": "рилс · слайд · документ · гайд", "pose": "point",
+   "text": "Парақшаңа немесе таргетке *рилс,* любой тақырыпта слайд, документ, гайд *бәрін жасап береді* 😍"},
+  {"card": "phones", "label": "кешікпе!", "pose": "wow",
+   "text": "Қазір үйренбесең кейін *точно кеш* қаласың."},
+  {"card": "price", "label": "баға", "pose": "thumb",
+   "text": "Claude-пен видео жасау сабақтарын *3500 теңгеге* алып + ИИ сабақтарын *тегін* ал ✅"},
+  {"card": "sabaq", "label": "қалай алуға болады?", "pose": "down",
+   "text": "Ол үшін төменге *сабақ* деп жаз."}
+ ],
+ "voice": {"engine": "piper", "speaker": 0, "speed": 1.32}
+}

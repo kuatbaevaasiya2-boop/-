@@ -37,7 +37,15 @@ html,body{margin:0;width:360px;height:640px;overflow:hidden;background:var(--bg)
 .tile{width:150px;height:62px;display:flex;align-items:center;gap:9px;padding:0 12px;font:800 15px MS}
 .tile svg{flex:none}
 #cat{position:absolute;left:0;top:0}
+.ph{position:absolute;width:96px;height:158px;border:4px solid var(--ink);border-radius:15px;padding:4px;background:#fff;box-shadow:4px 4px 0 var(--ink)}
+.ph .scr{width:80px;height:142px;background:#111}
+.big{font:900 italic 46px/1 MS;color:#fff;background:var(--red);border:4px solid var(--ink);border-radius:16px;box-shadow:5px 5px 0 var(--ink);padding:10px 18px;white-space:nowrap}
 </style></head><body><div id="stage"><div id="grain"></div><div id="scenes"></div>
+<div id="phones" style="position:absolute;inset:0;display:none">
+ <div class="ph" id="ph0" style="left:18px;top:214px"><div class="scr"></div></div>
+ <div class="ph" id="ph1" style="left:132px;top:202px"><div class="scr"></div></div>
+ <div class="ph" id="ph2" style="left:246px;top:214px"><div class="scr"></div></div>
+</div>
 <div id="dots"></div>
 <svg id="cat" viewBox="0 0 360 640" width="360" height="640" stroke="#1d1d2b" stroke-width="5" stroke-linejoin="round" stroke-linecap="round">
  <g id="catall">
@@ -188,6 +196,21 @@ function card(kind, si){
   <div class="el" id="c_ph" style="left:278px;top:212px">${IC.phone}</div>
   <div class="el pill" id="c_m" style="left:120px;top:318px;background:#E5322D;color:#fff;font-size:14px">монтаж ✓</div>`,
   [['#c_gh','github',-4],['#c_cc','claude',3],['#c_ph','телефон',6],['#c_m','монтаж',-4],['#c_ln','claude',0,'fade']]];
+ case 'phones': return [``,[]];
+ case 'price': return [`
+  <div class="el stk" id="p_lab" style="left:24px;top:200px;font-size:12px;background:#F7C948">Claude-пен видео сабағы</div>
+  <div class="el big" id="p_num" style="left:58px;top:238px">3500 ₸</div>
+  <div class="el pill" id="p_free" style="left:34px;top:318px;background:#2FA866;color:#fff;font-size:14px;font-style:normal">+ ИИ сабақтары ТЕГІН ✓</div>`,
+  [['#p_lab',0.05,-4],['#p_num','3500',-3],['#p_free','тегін',3]]];
+ case 'sabaq': return [`
+  <div class="el win" id="q_win" style="left:24px;top:206px;width:312px">
+   <div class="bar">○○○ пікірлер · @asiya.tg</div>
+   <div style="padding:9px 10px;display:flex;gap:8px;align-items:center">
+    <div style="width:30px;height:30px;border-radius:50%;background:#F08A3C;border:2.5px solid #1d1d2b;flex:none"></div>
+    <div class="row" style="flex:1;font-size:16px;padding:6px 10px"><span id="q_txt"></span><i id="q_cur" style="width:2px;height:18px;background:#1d1d2b;display:inline-block"></i></div>
+    <div style="width:34px;height:34px;border-radius:50%;background:#E5322D;border:2.5px solid #1d1d2b;display:flex;align-items:center;justify-content:center;color:#fff;font:900 16px MS;flex:none">➤</div></div></div>
+  <div class="el pill" id="q_tag" style="left:96px;top:300px;background:#F7C948;font-size:18px">«сабақ» деп жаз 👇</div>`,
+  [['#q_win',0.05,-2],['#q_tag','жаз',4]]];
  case 'cta': return [`
   <div class="el win" id="k_win" style="left:30px;top:204px;width:300px">
    <div class="bar">○○○ толық ақпарат</div>
@@ -218,6 +241,8 @@ function setup(data){
   s.els=els.map(([sel,key,rot,kind])=>({el:div.querySelector(sel),t:wtime(s,key),rot:rot||0,kind:kind||'pop'}));
   dots.appendChild(document.createElement('i'));
  });
+ if(D.watermark){const w=document.createElement('div');w.textContent=D.watermark;
+  w.style.cssText="position:absolute;left:14px;top:606px;font:600 9px 'DejaVu Sans Mono',monospace;color:#8a8070;opacity:.8";$('#stage').appendChild(w);}
  window.READY=true;
 }
 
@@ -306,6 +331,11 @@ function draw(t){
    s.div.querySelector('#s_fork').style.transform=`scale(${t>=tf?1+0.25*Math.sin(Math.PI*pf):1})`;
    s.div.querySelector('#s_fork').style.background=t>=tf?'#d9f2e3':'#fff';
   }
+  if(s.card==='sabaq'){
+   const tw=wtime(s,'сабақ'); const word='сабақ'; const n=Math.round(clamp((t-tw)/0.5)*word.length);
+   s.div.querySelector('#q_txt').textContent=word.slice(0,n);
+   s.div.querySelector('#q_cur').style.opacity=(t*2%1)<0.5?1:0;
+  }
   if(s.card==='noprog'){
    const tb=wtime(s,'бағдарламашы'); const on=t>=tb;
    s.div.querySelector('#n_tog').style.background='#ccc';
@@ -314,6 +344,11 @@ function draw(t){
   }
  });
  drawCat(t,D.scenes[cur].pose,t-D.scenes[cur].t0);
+ const P=D.phones;
+ if(P){ const on=t>=P.t0 && t<P.t1; $('#phones').style.display=on?'':'none';
+  if(on){ const xo=clamp((t-(P.t1-0.16))/0.16); $('#phones').style.opacity=1-xo;
+   [0,1,2].forEach(k=>{ const st=P.t0+k*0.15, p=clamp((t-st)/0.38), el=$('#ph'+k);
+    const fl=Math.sin(t*2+k*1.3)*0; el.style.opacity=clamp(p*3); el.style.transform=t<st?'scale(.5)':`scale(${0.5+0.5*eob(p)}) rotate(${(1-p)*(k-1)*8}deg)`; }); } }
 }
 window.setup=setup; window.draw=draw;
 </script></body></html>

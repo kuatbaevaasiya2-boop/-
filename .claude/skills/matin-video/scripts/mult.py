@@ -97,6 +97,11 @@ def prep(plan):
     for si, sc in enumerate(scenes):
         sc["t1"] = scenes[si + 1]["t0"] if si + 1 < len(scenes) else dur + 1
     data = {"fps": FPS, "dur": round(dur, 3), "env": [round(float(x), 3) for x in env], "scenes": scenes}
+    if P.get("watermark"):
+        data["watermark"] = P["watermark"]
+    if P.get("clips"):  # 3 кішкентай телефон: clips сахналарында
+        idx = [i for i, sc in enumerate(P["scenes"]) if sc.get("card") == "phones"]
+        data["phones"] = {"t0": scenes[idx[0]]["t0"] + 0.1, "t1": scenes[idx[-1]]["t1"]}
     json.dump(data, open(os.path.join(wd, "data.json"), "w"), ensure_ascii=False)
     for sc in scenes:
         print(f"{sc['t0']:6.2f}  " + " ".join(f"{w['w']}@{w['t']:.1f}" for w in sc["words"][:6]) + " …")
@@ -118,6 +123,19 @@ def raskadrovka(plan):
     fd = os.path.join(wd, "rf"); os.makedirs(fd, exist_ok=True)
     for f in os.listdir(fd): os.remove(os.path.join(fd, f))
     node(os.path.join(wd, "data.json"), "frames", ",".join(map(str, ts)), fd).wait()
+    if P.get("clips"):  # раскадровкада да телефон экранына видео кадрын саламыз
+        import cv2
+        ph = data["phones"]
+        for i, t in enumerate(ts):
+            if not (ph["t0"] + 0.6 <= t < ph["t1"] - 0.16):
+                continue
+            fp = os.path.join(fd, "f%02d.jpg" % i); fr = cv2.imread(fp)
+            for k, c in enumerate(P["clips"][:3]):
+                cap = cv2.VideoCapture(c["clip"]); cap.set(cv2.CAP_PROP_POS_MSEC, (c.get("from", 0) + t - ph["t0"] - k * 0.15 - 0.4) * 1000)
+                ok, im = cap.read()
+                if ok:
+                    x, y = PHONE_SCR[k]; fr[y:y + 426, x:x + 240] = cv2.resize(im, (240, 426), interpolation=cv2.INTER_AREA)
+            cv2.imwrite(fp, fr, [cv2.IMWRITE_JPEG_QUALITY, 92])
     os.makedirs("Раскадровка", exist_ok=True)
     out = f"Раскадровка/{P['name']}_раскадровка.jpg"
     n = len(ts); cols = 3 if n <= 9 else 4
@@ -142,7 +160,34 @@ def render(plan, max_mb):
                          "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "192k", "-shortest", "-movflags", "+faststart", out],
                         stdin=pr.stdout)
     pr.wait()
+    if P.get("clips"):
+        overlay_clips(P, data, out, br)
     print(out, os.path.getsize(out) // 1024 // 1024, "MB")
+
+
+PHONE_SCR = [(78, 666), (420, 630), (762, 666)]  # page.html .ph .scr орны (3x), 240x426
+
+
+def overlay_clips(P, data, out, br):
+    """Телефон экрандарына 3 видеоны салу (дыбыссыз)."""
+    ph = data["phones"]
+    tmp = out + ".tmp.mp4"
+    cmd = ["ffmpeg", "-v", "error", "-y", "-i", out]
+    fc, last = [], "0:v"
+    for k, c in enumerate(P["clips"][:3]):
+        a = ph["t0"] + k * 0.15 + 0.4
+        b = ph["t1"] - 0.16
+        cmd += ["-ss", str(c.get("from", 0)), "-i", c["clip"]]
+        fc.append(f"[{k + 1}:v]scale=240:426,setsar=1,fps={FPS},format=yuva420p,"
+                  f"fade=in:st=0:d=0.2:alpha=1,setpts=PTS-STARTPTS+{a}/TB[c{k}]")
+        x, y = PHONE_SCR[k]
+        fc.append(f"[{last}][c{k}]overlay={x}:{y}:eof_action=pass:enable='between(t,{a},{b})'[o{k}]")
+        last = f"o{k}"
+    cmd += ["-filter_complex", ";".join(fc), "-map", f"[{last}]", "-map", "0:a", "-c:a", "copy",
+            "-c:v", "libx264", "-preset", "medium", "-b:v", f"{br}k", "-maxrate", f"{br}k", "-bufsize", f"{2 * br}k",
+            "-pix_fmt", "yuv420p", "-movflags", "+faststart", tmp]
+    subprocess.run(cmd, check=True)
+    os.replace(tmp, out)
 
 
 if __name__ == "__main__":
