@@ -5,7 +5,8 @@
   icon   — иконка аты (ICONS ішінен), label — иконка үстіндегі шағын жазу
   chip   — қай бөлім белсенді (plan["chips"] индексі)
   bg     — "navy" (әдепкі) | "warm" | "teal" | "night"
-  kind   — hook | say | features | places | price | cta
+  kind   — hook | say | features | places | price | cta | clip
+  clip   — kind=clip: телефон экранында ойнайтын видео (clip — жол, from — басталу секунды)
   price  — old, new (бағалар), label, badge; маңызды *сөз* айтылғанда жаңа баға шығады
   items  — features/places үшін: [{"icon", "label", "word"}] (word айтылғанда иконка жанады)
 """
@@ -410,6 +411,49 @@ BGS = {
 }
 
 
+
+# ---------------------------------------------------------------- clip: телефон ішіндегі видео
+PH_W, PH_H, PH_CY = 450, 800, 790
+
+
+def phone_frame_layer():
+    pad = 40
+    w, h = PH_W + 2 * 18 + 2 * pad, PH_H + 2 * 18 + 2 * pad
+    im = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    glow = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    ImageDraw.Draw(glow).rounded_rectangle([pad, pad, w - pad, h - pad], 62, outline=GOLD_RGB + (200,), width=14)
+    im.alpha_composite(glow.filter(ImageFilter.GaussianBlur(18)))
+    d = ImageDraw.Draw(im)
+    d.rounded_rectangle([pad, pad, w - pad, h - pad], 62, fill=(8, 10, 18, 255), outline=GOLD_RGB + (255,), width=5)
+    d.rounded_rectangle([w / 2 - 60, pad + 6, w / 2 + 60, pad + 14], 4, fill=(40, 40, 50, 255))
+    return to_rgba(im)
+
+
+class ClipReader:
+    def __init__(self, path):
+        self.path, self.cap, self.pos, self.img = path, None, -1.0, None
+        m = Image.new("L", (PH_W, PH_H), 0)
+        ImageDraw.Draw(m).rounded_rectangle([0, 0, PH_W - 1, PH_H - 1], 44, fill=255)
+        self.mask = (np.asarray(m, np.float32) / 255.0)[:, :, None]
+
+    def get(self, ct):
+        if self.cap is None or ct < self.pos - 0.02:
+            if self.cap is not None:
+                self.cap.release()
+            self.cap = cv2.VideoCapture(self.path)
+            self.cap.set(cv2.CAP_PROP_POS_MSEC, max(0.0, ct) * 1000)
+            self.pos = -1.0
+        while self.pos < ct - 0.5 / FPS or self.img is None:
+            ok, f = self.cap.read()
+            if not ok:
+                break
+            self.pos = self.cap.get(cv2.CAP_PROP_POS_MSEC) / 1000.0
+            self.img = cv2.resize(f, (PH_W, PH_H), interpolation=cv2.INTER_AREA)
+        if self.img is None:
+            return None
+        return (self.img, self.mask)
+
+
 class Renderer:
     def __init__(self, plan, tl):
         self.plan, self.tl = plan, tl
@@ -602,6 +646,42 @@ class Renderer:
                 k2 = M.ease((t - ch["s"] + 0.05) / 0.15)
                 self.blend(fr, im, (W - im[1].shape[1]) / 2, cy - im[1].shape[0] / 2 + (1 - k2) * 12, al)
 
+    def draw_phone(self, fr, t, s):
+        """plan["clips"]: [{clip, from, s, e}] — телефон экранында кезекпен ойнайтын видеолар."""
+        clips = self.plan.get("clips") or []
+        cl = next((c for c in clips if c["s"] <= t < c["e"]), None)
+        if cl is None:
+            return
+        if "readers" not in self.__dict__:
+            self.readers = {}
+            self.phone = phone_frame_layer()
+        rd = self.readers.setdefault(cl["clip"], ClipReader(cl["clip"]))
+        t0, t1 = clips[0]["s"], clips[-1]["e"]
+        a = M.ease((t - t0) / 0.35) * (1 - M.ease((t - t1 + 0.3) / 0.3))
+        sc_, cy = 0.9 + 0.1 * M.ease((t - t0) / 0.4), PH_CY
+        if s["kind"] == "price":  # баға сахнасында телефон кішірейіп жоғары көтеріледі
+            k = M.ease((t - s["tl"]["s"] + 0.2) / 0.45)
+            sc_, cy = 1 - 0.3 * k, PH_CY - 115 * k
+        sw = t - cl["s"]
+        if cl is not clips[0] and sw < 0.3:  # клип ауысқанда кішкене «секіру»
+            sc_ *= 1 - 0.05 * math.sin(sw / 0.3 * math.pi)
+        cy += 6 * math.sin(t * 1.8)
+        prgb, pa = self.phone
+        if abs(sc_ - 1) > 0.002:
+            psz = (int(pa.shape[1] * sc_), int(pa.shape[0] * sc_))
+            prgb, pa = cv2.resize(prgb, psz), cv2.resize(pa, psz)[:, :, None]
+        self.blend(fr, (prgb, pa), W / 2 - pa.shape[1] / 2, cy - pa.shape[0] / 2, a)
+        got = rd.get(cl.get("from", 0.0) + sw)
+        if got is not None:
+            img, m = got
+            if abs(sc_ - 1) > 0.002:
+                sz = (int(PH_W * sc_), int(PH_H * sc_))
+                img, m = cv2.resize(img, sz), cv2.resize(m, sz)[:, :, None]
+            self.blend(fr, (img.astype(np.float32), m), W / 2 - img.shape[1] / 2, cy - img.shape[0] / 2, a)
+            if cl is not clips[0] and sw < 0.25:
+                f = 0.6 * (1 - sw / 0.25)
+                self.blend(fr, (np.full_like(m, 255).repeat(3, 2), m), W / 2 - img.shape[1] / 2, cy - img.shape[0] / 2, a * f)
+
     # ---- кадр
     def frame(self, t):
         fr = self.background(t)
@@ -630,6 +710,7 @@ class Renderer:
         if self.wm:
             self.blend(fr, self.wm, 60, 1530, 1.0)
         kind = s["kind"]
+        self.draw_phone(fr, t, s)
         if kind == "hook":
             shown = max(1, sum(1 for w in s["items"] if w["s"] <= t + 0.03))
             im = self.cached(s, ("hook", shown), lambda: text_block(s["items"], shown, 84, 880))
@@ -699,16 +780,25 @@ class Renderer:
                 else:
                     self.blend(fr, lab, x - lw_ / 2, y2 + size / 2 + 8, al)
             self.subtitles(fr, s, t, 1270, al)
+        elif kind == "clip":
+            if sc.get("label"):
+                lb = self.cached(s, "label", lambda: mono_label(sc["label"], 32))
+                self.blend(fr, lb, (W - lb[1].shape[1]) / 2, 318 + dy, al)
+            self.subtitles(fr, s, t, 1320, al)
         elif kind == "price":
+            ph = any(c["s"] <= t < c["e"] for c in self.plan.get("clips") or [])
+            pyo = 160 if ph else 0
             if sc.get("label"):
                 lb = self.cached(s, "label", lambda: mono_label(sc["label"], 30))
-                self.blend(fr, lb, (W - lb[1].shape[1]) / 2, 420 + dy, al)
+                self.blend(fr, lb, (W - lb[1].shape[1]) / 2, (318 if ph else 420) + dy, al)
             kt = s["kw_t"]
-            old = self.cached(s, "old", lambda: big_text(sc["old"], 130, (255, 255, 255)))
-            ow, oh = old[1].shape[1], old[1].shape[0]
-            ox, oy = (W - ow) / 2, 560 + dy
-            self.blend(fr, old, ox, oy, al * (0.55 if t > kt else 1.0))
-            u = M.ease((t - st - 0.6) / 0.35)
+            u = 0
+            if sc.get("old"):
+                old = self.cached(s, "old", lambda: big_text(sc["old"], 130, (255, 255, 255)))
+                ow, oh = old[1].shape[1], old[1].shape[0]
+                ox, oy = (W - ow) / 2, 560 + dy
+                self.blend(fr, old, ox, oy, al * (0.55 if t > kt else 1.0))
+                u = M.ease((t - st - 0.6) / 0.35)
             if u > 0:
                 x1 = int(ox + 20 + (ow - 40) * u)
                 cv2.line(fr, (int(ox + 20), int(oy + oh * 0.55)), (x1, int(oy + oh * 0.45)), RED_BGR, 14, cv2.LINE_AA)
@@ -719,13 +809,13 @@ class Renderer:
                 rgb, a = new
                 sc_ = max(0.05, pop * bnc)
                 sz = (int(a.shape[1] * sc_), int(a.shape[0] * sc_))
-                self.blend(fr, (cv2.resize(rgb, sz), cv2.resize(a, sz)[:, :, None]), (W - sz[0]) / 2, 960 - sz[1] / 2 + dy, al)
-                self.ring(fr, W / 2, 960, 420, t - kt)
-                self.ring(fr, W / 2, 960, 340, t - kt - 0.15)
+                self.blend(fr, (cv2.resize(rgb, sz), cv2.resize(a, sz)[:, :, None]), (W - sz[0]) / 2, 960 + pyo - sz[1] / 2 + dy, al)
+                self.ring(fr, W / 2, 960 + pyo, 420, t - kt)
+                self.ring(fr, W / 2, 960 + pyo, 340, t - kt - 0.15)
                 if sc.get("badge"):
                     bd = self.cached(s, "badge", lambda: chip_badge(sc["badge"]))
-                    self.blend(fr, bd, (W - bd[1].shape[1]) / 2, 1110 + dy, al * M.ease((t - kt - 0.2) / 0.3))
-            self.subtitles(fr, s, t, 1300, al)
+                    self.blend(fr, bd, (W - bd[1].shape[1]) / 2, 1110 + pyo * 0.9 + dy, al * M.ease((t - kt - 0.2) / 0.3))
+            self.subtitles(fr, s, t, 1300 + (110 if ph else 0), al)
         elif kind == "cta":
             card = sc.get("card") or sc["text"]
             if "card_items" not in s:
