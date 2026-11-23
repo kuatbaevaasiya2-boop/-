@@ -1,0 +1,282 @@
+<!doctype html><html><head><meta charset="utf-8">
+<style>
+@font-face{font-family:MS;font-weight:800;font-style:normal;unicode-range:U+0000-024F,U+2000-206F,U+203A;src:url(fonts/montserrat-latin-800-normal.woff2)}
+@font-face{font-family:MS;font-weight:800;font-style:normal;unicode-range:U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;src:url(fonts/montserrat-cyrillic-800-normal.woff2)}
+@font-face{font-family:MS;font-weight:800;font-style:normal;unicode-range:U+0460-052F;src:url(fonts/montserrat-cyrillic-ext-800-normal.woff2)}
+@font-face{font-family:MS;font-weight:900;font-style:normal;unicode-range:U+0000-024F,U+2000-206F;src:url(fonts/montserrat-latin-900-normal.woff2)}
+@font-face{font-family:MS;font-weight:900;font-style:normal;unicode-range:U+0400-045F,U+0490-0491,U+04B0-04B1;src:url(fonts/montserrat-cyrillic-900-normal.woff2)}
+@font-face{font-family:MS;font-weight:900;font-style:normal;unicode-range:U+0460-052F;src:url(fonts/montserrat-cyrillic-ext-900-normal.woff2)}
+@font-face{font-family:MS;font-weight:600;font-style:normal;unicode-range:U+0000-024F,U+2000-206F;src:url(fonts/montserrat-latin-600-normal.woff2)}
+@font-face{font-family:MS;font-weight:600;font-style:normal;unicode-range:U+0400-045F,U+0490-0491,U+04B0-04B1;src:url(fonts/montserrat-cyrillic-600-normal.woff2)}
+@font-face{font-family:MS;font-weight:600;font-style:normal;unicode-range:U+0460-052F;src:url(fonts/montserrat-cyrillic-ext-600-normal.woff2)}
+:root{--gold:#E8B04B;--ink:#0a0e22;--cream:#FFF6DF}
+*{box-sizing:border-box}
+html,body{margin:0;width:360px;height:640px;overflow:hidden;background:#0a0e22}
+#stage{position:absolute;inset:0;overflow:hidden;font-family:MS,sans-serif;color:#fff}
+svg{position:absolute;left:0;top:0}
+.lab{position:absolute;left:18px;top:20px;font:600 9.5px MS;letter-spacing:1.4px;color:var(--gold);opacity:.85}
+#dots{position:absolute;right:18px;top:20px;display:flex;gap:3px}
+#dots i{width:6px;height:6px;border-radius:50%;border:1.4px solid var(--gold);display:block;opacity:.8}
+#dots i.on{background:var(--gold)} #dots i.cur{background:#fff;border-color:#fff}
+#sub{position:absolute;left:16px;right:16px;top:58px;text-align:center;font:800 21px/1.3 MS;letter-spacing:-.2px;
+ text-shadow:0 2px 0 #05070f,0 0 14px rgba(0,0,0,.8)}
+#sub .ln{white-space:nowrap}
+#sub span{display:inline-block;white-space:pre}
+#sub .e{color:var(--gold)}
+#sub.hook{top:70px;font:900 33px/1.12 MS;color:var(--gold)}
+.el{position:absolute;transform-origin:50% 50%}
+.chip{border-radius:999px;border:2px solid var(--gold);background:rgba(8,11,30,.88);color:var(--gold);font:800 12.5px MS;padding:6px 12px;white-space:nowrap;box-shadow:0 0 16px rgba(232,176,75,.25)}
+.bub{background:var(--cream);color:#1a1630;border-radius:16px;padding:9px 13px;font:800 14.5px/1.25 MS;box-shadow:0 4px 0 rgba(0,0,0,.35)}
+.bub:after{content:'';position:absolute;bottom:-10px;width:0;height:0;border-left:9px solid transparent;border-right:9px solid transparent;border-top:12px solid var(--cream)}
+.bub.tr:after{right:28px} .bub.tl:after{left:26px}
+.bub.gold{background:#1b1636;color:var(--cream);border:2.5px solid var(--gold)}
+.bub.gold:after{border-top-color:var(--gold)}
+.bub.red{background:#C8343A;color:#fff}.bub.red:after{border-top-color:#C8343A}
+.card{border:2.5px solid var(--gold);border-radius:18px;background:rgba(12,14,36,.9);box-shadow:0 0 30px rgba(232,176,75,.3),inset 0 0 0 5px rgba(232,176,75,.12);text-align:center}
+.orn{color:var(--gold);font:600 10px MS;letter-spacing:3px}
+</style></head><body><div id="stage">
+<svg id="sky" viewBox="0 0 360 640" width="360" height="640">
+ <defs>
+  <linearGradient id="gsky" x1="0" y1="0" x2="0" y2="1">
+   <stop offset="0" stop-color="#060918"/><stop offset=".45" stop-color="#121a44"/><stop offset=".72" stop-color="#2a2552"/><stop offset="1" stop-color="#3b2b4a"/></linearGradient>
+  <radialGradient id="gmoon" cx=".4" cy=".38" r=".7"><stop offset="0" stop-color="#FFFBEA"/><stop offset=".7" stop-color="#F3E3B5"/><stop offset="1" stop-color="#D9C38A"/></radialGradient>
+  <radialGradient id="glow"><stop offset="0" stop-color="#FFE9A8" stop-opacity=".55"/><stop offset=".5" stop-color="#E8B04B" stop-opacity=".16"/><stop offset="1" stop-color="#E8B04B" stop-opacity="0"/></radialGradient>
+  <radialGradient id="flash"><stop offset="0" stop-color="#fff" stop-opacity="1"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+ </defs>
+ <rect width="360" height="640" fill="url(#gsky)"/>
+ <g id="stars"></g>
+ <g id="moon" transform="translate(150 215)">
+  <circle id="mglow" r="110" fill="url(#glow)"/>
+  <circle id="mfull" r="52" fill="url(#gmoon)"/><g id="mfc"><circle cx="-22" cy="-14" r="9" fill="#E2CD95" opacity=".7"/><circle cx="-30" cy="18" r="6" fill="#E2CD95" opacity=".6"/><circle cx="-10" cy="30" r="4.5" fill="#E2CD95" opacity=".6"/><circle cx="20" cy="-26" r="7" fill="#E2CD95" opacity=".65"/><circle cx="26" cy="10" r="10" fill="#E2CD95" opacity=".6"/><circle cx="12" cy="36" r="4" fill="#E2CD95" opacity=".6"/></g>
+  <g id="mL"><circle id="gL" r="0" fill="url(#glow)"/><path d="M0 -52 A52 52 0 0 0 0 52 Z" fill="url(#gmoon)"/>
+   <circle cx="-22" cy="-14" r="9" fill="#E2CD95" opacity=".7"/><circle cx="-30" cy="18" r="6" fill="#E2CD95" opacity=".6"/><circle cx="-10" cy="30" r="4.5" fill="#E2CD95" opacity=".6"/>
+   <path id="crackL" d="M0 -52 L-5 -30 L3 -12 L-4 8 L4 26 L0 52" fill="none" stroke="#fff" stroke-width="0" opacity="0"/></g>
+  <g id="mR"><circle id="gR" r="0" fill="url(#glow)"/><path d="M0 -52 A52 52 0 0 1 0 52 Z" fill="url(#gmoon)"/>
+   <circle cx="20" cy="-26" r="7" fill="#E2CD95" opacity=".65"/><circle cx="26" cy="10" r="10" fill="#E2CD95" opacity=".6"/><circle cx="12" cy="36" r="4" fill="#E2CD95" opacity=".6"/></g>
+  <circle id="mflash" r="80" fill="url(#flash)" opacity="0"/>
+ </g>
+ <!-- Хира тауы -->
+ <path d="M188 440 L232 372 L250 380 L292 318 L310 336 L330 326 L372 400 L372 440Z" fill="#171c3c"/>
+ <path d="M292 318 L310 336 L300 352 L286 340Z" fill="#242a52"/>
+ <!-- Мекке -->
+ <g id="city" fill="#0e1230">
+  <path d="M-5 470 V418 H30 V404 H58 V426 H84 V398 H118 V422 H150 V410 H178 V432 H206 V414 H238 V430 H270 V416 H300 V428 H330 V408 H365 V470Z"/>
+  <path d="M100 398 V380 Q109 368 118 380 V398Z"/>
+  <g stroke="#0e1230" stroke-width="3" fill="none"><path d="M246 430 Q244 395 250 372"/><path d="M20 418 Q18 388 24 366"/></g>
+  <g><path d="M250 372 q-16 -2 -24 8 q12 -8 24 -8 q-6 -14 -20 -16 q14 4 20 16 q4 -14 18 -16 q-12 6 -18 16 q14 -4 24 6 q-12 -4 -24 -6Z"/>
+   <path d="M24 366 q-16 -2 -24 8 q12 -8 24 -8 q-6 -14 -20 -16 q14 4 20 16 q4 -14 18 -16 q-12 6 -18 16 q14 -4 24 6 q-12 -4 -24 -6Z"/></g>
+  <g fill="#E8B04B" opacity=".55"><rect x="40" y="416" width="5" height="7"/><rect x="92" y="410" width="5" height="7"/><rect x="160" y="420" width="5" height="7"/><rect x="216" y="424" width="5" height="7"/><rect x="310" y="418" width="5" height="7"/></g>
+ </g>
+ <rect y="466" width="360" height="180" fill="#080b1c"/>
+ <!-- тобыр: тек сұлба, беті жоқ -->
+ <g id="crowd" fill="#05071a" stroke="#3a4374" stroke-width="1.6"></g>
+</svg>
+<div id="cards"></div>
+<svg id="ata" viewBox="0 0 360 640" width="360" height="640" stroke="#2a1a10" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round">
+ <g id="ataall" transform="translate(78 452)">
+  <!-- шапан -->
+  <path d="M-62 140 C-60 70 -44 44 0 40 C44 44 60 70 62 140Z" fill="#1F4E5F"/>
+  <path d="M-14 42 L0 140 L14 42" fill="none" stroke="#E8B04B" stroke-width="5"/>
+  <path d="M-14 42 L0 140 L14 42" fill="none" stroke="#2a1a10" stroke-width="1.5" opacity=".4"/>
+  <path d="M-40 60 L-46 140 M40 60 L46 140" fill="none" stroke="#E8B04B" stroke-width="2.5" opacity=".7"/>
+  <g id="armUp" style="display:none">
+   <path id="armP" d="M34 64 Q60 40 66 0" fill="none" stroke="#1F4E5F" stroke-width="18"/>
+   <g id="handU" transform="translate(66 -4)"><rect x="-8" y="-6" width="16" height="16" rx="6" fill="#E9B98C"/><rect x="-3" y="-24" width="7" height="22" rx="3.5" fill="#E9B98C"/></g>
+  </g>
+  <g id="head">
+   <ellipse cx="0" cy="0" rx="31" ry="35" fill="#E9B98C"/>
+   <ellipse cx="-31" cy="4" rx="6" ry="9" fill="#E0A97A"/><ellipse cx="31" cy="4" rx="6" ry="9" fill="#E0A97A"/>
+   <!-- сақал -->
+   <path id="beard" d="M-30 4 C-30 40 -16 62 0 66 C16 62 30 40 30 4 C22 14 14 18 0 18 C-14 18 -22 14 -30 4Z" fill="#F4F1EA"/>
+   <path d="M-16 13 Q0 6 16 13 Q8 19 0 17 Q-8 19 -16 13Z" fill="#fff"/>
+   <ellipse id="mouth" cx="0" cy="22" rx="6" ry="2" fill="#6b2a2a" stroke-width="1.8"/>
+   <path d="M-3 0 Q0 8 4 4" fill="none" stroke-width="2.2"/>
+   <g id="eyes"><path d="M-17 -6 Q-11 -11 -5 -6" fill="none" stroke-width="3"/><path d="M5 -6 Q11 -11 17 -6" fill="none" stroke-width="3"/></g>
+   <path d="M-20 -16 Q-12 -21 -4 -16 M4 -16 Q12 -21 20 -16" fill="none" stroke="#fff" stroke-width="4"/>
+   <ellipse cx="-17" cy="6" rx="5" ry="3" fill="#E68C7A" stroke="none" opacity=".6"/><ellipse cx="17" cy="6" rx="5" ry="3" fill="#E68C7A" stroke="none" opacity=".6"/>
+   <!-- ақ қалпақ -->
+   <path d="M-34 -22 C-30 -60 -10 -74 0 -76 C10 -74 30 -60 34 -22Z" fill="#F7F4EC"/>
+   <path d="M-38 -20 L-34 -34 L-6 -30 L0 -40 L6 -30 L34 -34 L38 -20 Q0 -14 -38 -20Z" fill="#141414"/>
+   <path d="M-12 -52 Q0 -60 12 -52" fill="none" stroke="#E8B04B" stroke-width="2"/>
+  </g>
+ </g>
+</svg>
+<div class="lab" id="lab"></div><div id="dots"></div>
+<div id="sub"></div>
+</div>
+<script>
+const $=(s,r=document)=>r.querySelector(s);
+const clamp=(x,a=0,b=1)=>Math.max(a,Math.min(b,x));
+const eob=x=>{const c1=1.9,c3=c1+1;return 1+c3*Math.pow(x-1,3)+c1*Math.pow(x-1,2)};
+const eo=x=>1-Math.pow(1-x,3);
+const eio=x=>x<.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2;
+let D=null, ST=[], tSplit=1e9, CR=[];
+
+// жұлдыздар
+(function(){let s=7;const r=()=>(s=(s*16807)%2147483647)/2147483647;const g=$('#stars');let h='';
+ for(let i=0;i<90;i++){const x=r()*360,y=30+r()*370,rr=.4+r()*1.3;h+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${rr.toFixed(2)}" fill="#fff" data-p="${(r()*6).toFixed(2)}"/>`}
+ g.innerHTML=h; ST=[...g.children];})();
+// тобыр (сұлба)
+(function(){const g=$('#crowd');const P=[[150,474,1],[186,462,1.08],[222,470,1],[258,458,1.1],[296,468,1.02],[332,460,1.06]];
+ let h='';P.forEach(([x,y,s],i)=>{h+=`<g class="fig" data-x="${x}" data-y="${y}"><g transform="translate(${x} ${y}) scale(${s})">
+  <path d="M-30 110 C-28 50 -20 28 0 26 C20 28 28 50 30 110Z"/>
+  <ellipse cx="0" cy="4" rx="15" ry="17"/>
+  <path d="M-17 -2 C-18 -20 18 -20 17 -2 C10 -8 -10 -8 -17 -2Z" fill="#0b0f28"/>
+  <path d="M-15 6 C-20 22 -22 30 -26 40 M15 6 C20 22 22 30 26 40" fill="none"/></g></g>`});
+ g.innerHTML=h; CR=[...g.children];})();
+
+function card(kind){
+ switch(kind){
+ case 'hook': return [`<div class="el chip" id="a" style="left:118px;top:292px">✦ Пайғамбар мұғжизасы ✦</div>`,[['#a',0.4,0]]];
+ case 'quraysh': return [`
+  <div class="el chip" id="a" style="left:150px;top:396px">Уәлид бин Мұғира</div>
+  <div class="el chip" id="b" style="left:204px;top:362px">Әбу Жәһл</div>
+  <div class="el bub tr" id="c" style="left:112px;top:290px;width:182px">«Айды екіге бөліп көрсет!»</div>`,
+  [['#a','уәлид',-3],['#b','әбу',3],['#c','көрсет',-2]]];
+ case 'iman': return [`
+  <div class="el bub gold tl" id="a" style="left:24px;top:288px;width:200px">«Егер солай етсем, иман келтіресіңдер ме?»</div>
+  <div class="el bub tr" id="b" style="left:214px;top:372px;font-size:20px">«Иә!»</div>`,
+  [['#a','егер',-2],['#b','иә',4]]];
+ case 'tolyn': return [`<div class="el chip" id="a" style="left:108px;top:292px">🌕 он төрт күндік ай</div>`,[['#a','төрт',0]]];
+ case 'split': return [`<div class="el chip" id="a" style="left:96px;top:300px">Алланың бұйрығымен</div>`,[['#a','бұйрығымен',-2]]];
+ case 'hira': return [`
+  <div class="el chip" id="a" style="left:46px;top:286px">бір бөлігі — орнында</div>
+  <div class="el chip" id="b" style="left:196px;top:338px">⛰ Хира тауы</div>`,
+  [['#a','орнында',-2],['#b','хира',2]]];
+ case 'kua': return [`<div class="el card" id="a" style="left:30px;top:272px;width:240px;padding:10px 10px">
+   <div class="orn">✦ ✦ ✦</div><div style="font:900 26px MS;color:#FFF6DF;margin-top:4px">«Куә болыңдар!»</div></div>`,[['#a','куә',0]]];
+ case 'sihyr': return [`
+  <div class="el bub red tr" id="a" style="left:168px;top:294px;width:134px">«Сиқырлады!»</div>
+  <div class="el bub tr" id="b" style="left:138px;top:352px;width:166px">«Көзімізді байлады!»</div>
+  <div class="el chip" id="c" style="left:14px;top:300px;border-color:#E5484D;color:#FF8A8E">✕ иман келтірмеді</div>`,
+  [['#a','сиқырлады',-3],['#b','көзімізді',2],['#c','келтірмеді',0]]];
+ case 'quran': return [`
+  <div class="el" id="dim" style="left:0;top:0;width:360px;height:640px;background:rgba(4,6,18,.55)"></div>
+  <div class="el card" id="a" style="left:28px;top:160px;width:280px;padding:14px 14px">
+   <div class="orn">✦ ҚҰРАН КӘРІМ ✦</div>
+   <div style="font:900 23px/1.2 MS;color:#FFF6DF;margin:10px 0 10px">«Қиямет жақындады, ай жарылды»</div>
+   <div style="font:600 11px MS;color:var(--gold)">Қамар сүресі, 1-аят</div></div>
+  <div class="el chip" id="b" style="left:140px;top:338px">осы мұғжизаға ишарат</div>`,
+  [['#dim','құран',0,'fade'],['#a','құран',0],['#b','ишарат',-2]]];
+ case 'dalel': return [`
+  <div class="el card" id="a" style="left:40px;top:292px;width:112px;padding:10px 6px"><div style="font:900 20px MS;color:var(--gold)">АЯТ</div><div style="font:900 18px MS;color:#6EE7A0">✓</div></div>
+  <div class="el card" id="b" style="left:172px;top:292px;width:120px;padding:10px 6px"><div style="font:900 20px MS;color:var(--gold)">ХАДИС</div><div style="font:900 18px MS;color:#6EE7A0">✓</div></div>`,
+  [['#a','аят',-4],['#b','хадиспен',4]]];
+ case 'parapar': return [`<div class="el card" id="a" style="left:34px;top:272px;width:262px;padding:10px 10px">
+   <div style="font:800 15px MS;color:#FFF6DF">Мұғжизаны мойындамау</div>
+   <div style="font:900 28px/1.1 MS;color:var(--gold)">=</div>
+   <div style="font:800 15px MS;color:#FFF6DF">Құранды мойындамау</div></div>`,[['#a','сондықтан',0]]];
+ }
+ return ['',[]];
+}
+function wtime(s,key){
+ if(typeof key==='number') return s.t0+key;
+ for(const w of s.words){ if(w.w.toLowerCase().includes(key)) return w.t; }
+ return s.t0+0.3;
+}
+// субтитр беттері
+function pages(s,hook){
+ const c=document.createElement('canvas').getContext('2d'); c.font=hook?'900 33px MS':'800 21px MS';
+ const maxW=hook?320:318, lines=[]; let cur=[];
+ s.words.forEach((w,j)=>{const test=cur.map(k=>s.words[k].w).concat(w.w).join(' ');
+  if(cur.length&&c.measureText(test).width>maxW){lines.push(cur);cur=[]} cur.push(j)});
+ if(cur.length) lines.push(cur);
+ const per=hook?3:2, pg=[]; for(let i=0;i<lines.length;i+=per) pg.push(lines.slice(i,i+per));
+ return pg;
+}
+function setup(data){
+ D=data; const root=$('#cards'); const dots=$('#dots'); $('#lab').textContent='// '+(D.title||'').toUpperCase();
+ D.scenes.forEach((s,i)=>{
+  const div=document.createElement('div'); div.style.cssText='position:absolute;inset:0;display:none';
+  const [html,els]=card(s.card); div.innerHTML=html; root.appendChild(div); s.div=div;
+  s.els=els.map(([sel,key,rot,kind])=>({el:div.querySelector(sel),t:wtime(s,key),rot:rot||0,kind:kind||'pop'}));
+  s.pg=pages(s,i===0); dots.appendChild(document.createElement('i'));
+  if(s.card==='split') tSplit=wtime(s,'екіге');
+ });
+ window.READY=true;
+}
+function env(t){const i=Math.floor(t*D.fps);return D.env[Math.max(0,Math.min(D.env.length-1,i))]||0}
+
+function drawSky(t,cur){
+ ST.forEach(c=>{const p=+c.dataset.p;c.setAttribute('opacity',(0.45+0.55*Math.abs(Math.sin(t*0.9+p))).toFixed(2))});
+ const sc=D.scenes[cur]; const k=sc?sc.card:'';
+ // ай
+ const ps=clamp((t-tSplit)/1.8), pe=eio(ps);
+ const tol=(k==='tolyn'||k==='hook')?1:0;
+ const breathe=1+0.015*Math.sin(t*1.3)+(k==='tolyn'?0.08*eo(clamp((t-sc.t0)/1.2)):0);
+ $('#moon').setAttribute('transform',`translate(150 215) scale(${breathe})`);
+ $('#mL').setAttribute('transform',`translate(${-10*pe} ${-4*pe}) rotate(${-6*pe})`);
+ $('#mR').setAttribute('transform',`translate(${128*pe} ${48*pe}) rotate(${12*pe})`);
+ const sp=t>=tSplit;$('#mfull').style.display=sp?'none':'';$('#mfc').style.display=sp?'none':'';$('#mL').style.opacity=sp?1:0;$('#mR').style.opacity=sp?1:0;
+ $('#mglow').setAttribute('opacity',(1-pe*0.85).toFixed(2));
+ $('#gL').setAttribute('r',70*pe); $('#gR').setAttribute('r',70*pe);
+ const fl=t>=tSplit?Math.max(0,1-(t-tSplit)/0.6):0;
+ $('#mflash').setAttribute('opacity',fl.toFixed(2));
+ // жарылар алдында жарқылдаған сызық
+ const pre=clamp((t-(tSplit-0.9))/0.9); const cr=t<tSplit?pre:0;
+ $('#crackL').setAttribute('stroke-width',(cr*3).toFixed(2)); $('#crackL').setAttribute('opacity',cr.toFixed(2));
+ // тобыр
+ const show=['quraysh','iman','tolyn','split','hira','kua','sihyr'].includes(k);
+ const st=D.scenes.find(s=>s.card==='quraysh'); const cin=st?eo(clamp((t-st.t0-0.3)/0.8)):1;
+ const qi=D.scenes.findIndex(s=>s.card==='quran'); const cout=qi>=0?1-eo(clamp((t-D.scenes[qi].t0)/0.6)):1;
+ const op=show||k==='quran'?Math.min(cin,cout):0;
+ $('#crowd').setAttribute('opacity',op.toFixed(2));
+ const away=k==='sihyr'?eo(clamp((t-wtime(sc,'келтірмеді'))/0.6)):0;
+ CR.forEach((g,i)=>{const dy=Math.sin(t*1.7+i*1.3)*1.6+(1-cin)*40;
+  const sh=k==='sihyr'&&t>wtime(sc,'сиқырлады')&&t<wtime(sc,'сиқырлады')+0.6?Math.sin(t*40+i)*2:0;
+  g.setAttribute('transform',`translate(${sh+away*(i%2?14:-10)} ${dy})`)});
+}
+function drawAta(t,k,sceneT){
+ const a=Math.max(env(t),env(t-0.05)*0.8);
+ $('#mouth').setAttribute('ry',(1.5+9*a).toFixed(2)); $('#mouth').setAttribute('rx',(6+2*a).toFixed(2));
+ const blink=((t+0.4)%3.6)<0.12; $('#eyes').style.opacity=blink?0.2:1;
+ const rot=Math.sin(t*1.9)*2.5+(a-0.3)*2.5, dy=Math.sin(t*3.8)*1-a*2;
+ $('#head').setAttribute('transform',`translate(0 ${dy}) rotate(${rot} 0 40)`);
+ const up=['split','parapar','quran','hook'].includes(k);
+ $('#armUp').style.display=up?'':'none';
+ if(up){const p=eob(clamp(sceneT/0.5)); const hy=-4+(1-p)*60+Math.sin(t*4)*2;
+  $('#armP').setAttribute('d',`M34 64 Q60 ${40+(1-p)*30} 66 ${hy+4}`); $('#handU').setAttribute('transform',`translate(66 ${hy})`);}
+ $('#ataall').setAttribute('transform',`translate(78 ${452+Math.sin(t*1.5)*1.2})`);
+}
+function drawSub(t,s,hook){
+ const sub=$('#sub'); sub.className=hook?'hook':'';
+ let pi=0; s.pg.forEach((p,i)=>{if(t>=s.words[p[0][0]].t-0.15) pi=i});
+ const pg=s.pg[pi]; const key=s.card+pi;
+ if(sub.dataset.k!==key){ sub.dataset.k=key;
+  sub.innerHTML=pg.map(ln=>'<div class="ln">'+ln.map(j=>`<span data-j="${j}"${s.words[j].e?' class="e"':''}>${s.words[j].w}</span>`).join(' ')+'</div>').join(''); }
+ sub.querySelectorAll('span').forEach(sp=>{const w=s.words[+sp.dataset.j]; const p=clamp((t-w.t)/(hook?0.3:0.15));
+  if(t<w.t){sp.style.opacity=hook?0:0.32; sp.style.transform=hook?'scale(.5)':'none'}
+  else if(hook){sp.style.opacity=clamp(p*3); sp.style.transform=`scale(${0.5+0.5*eob(p)})`}
+  else {sp.style.opacity=0.32+0.68*eo(p); sp.style.transform=`translateY(${(1-eo(p))*-3}px)`}});
+}
+function cover(){
+ tSplit=-10; drawSky(100,-1); $('#crowd').setAttribute('opacity',1); drawAta(1.2,'hook',2);
+ $('#mouth').setAttribute('ry',3); $('#sub').innerHTML=''; $('#dots').style.display='none';
+ $('#lab').textContent=''; $('#cards').innerHTML=`
+  <div style="position:absolute;left:0;right:0;top:330px;text-align:center">
+   <div class="orn" style="font-size:11px">✦ ПАЙҒАМБАР МҰҒЖИЗАСЫ ✦</div>
+   <div style="font:900 44px/1.02 MS;color:#FFF6DF;margin-top:8px;text-shadow:0 3px 0 #05070f,0 0 24px rgba(0,0,0,.9)">АЙДЫҢ<br><span style="color:var(--gold)">ЕКІГЕ</span><br>БӨЛІНУІ</div></div>`;
+ $('#ataall').style.opacity=0;
+}
+function draw(t){
+ if(t<0) return cover();
+ let cur=0; D.scenes.forEach((s,i)=>{ if(t>=s.t0) cur=i; });
+ [...$('#dots').children].forEach((d,i)=>d.className=i<cur?'on':i===cur?'cur':'');
+ D.scenes.forEach((s,i)=>{
+  if(i!==cur){s.div.style.display='none';return}
+  s.div.style.display='';
+  s.els.forEach(o=>{
+   const p=clamp((t-o.t)/0.38);
+   if(t<o.t){o.el.style.opacity=0;o.el.style.transform=`scale(.5) rotate(${o.rot}deg)`;return}
+   if(o.kind==='fade'){o.el.style.opacity=eo(clamp((t-o.t)/0.5));o.el.style.transform='none';return}
+   const xo=clamp((t-(s.t1-0.2))/0.2);
+   o.el.style.opacity=clamp(p*3)*(1-xo); o.el.style.transform=`scale(${0.5+0.5*eob(p)}) rotate(${o.rot}deg)`;
+  });
+ });
+ const s=D.scenes[cur];
+ drawSky(t,cur); drawAta(t,s.card,t-s.t0); drawSub(t,s,cur===0);
+ const sh=t<0.3?Math.sin(t*90)*(0.3-t)*8:(t>=tSplit&&t<tSplit+0.4?Math.sin(t*80)*(tSplit+0.4-t)*10:0);
+ $('#stage').style.transform=`translate(${sh}px,${sh*0.4}px)`;
+}
+window.setup=setup; window.draw=draw;
+</script></body></html>
