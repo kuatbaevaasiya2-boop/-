@@ -165,7 +165,7 @@ def render(plan, max_mb):
     print(out, os.path.getsize(out) // 1024 // 1024, "MB")
 
 
-PHONE_SCR = [(78, 666), (420, 630), (762, 666)]  # page.html .ph .scr орны (3x), 240x426
+PHONE_SCR = [(78, 678), (420, 654), (762, 678)]  # page.html .ph .scr орны (3x), 240x426
 
 
 def overlay_clips(P, data, out, br):

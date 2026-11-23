@@ -15,11 +15,11 @@ html,body{margin:0;width:360px;height:640px;overflow:hidden;background:var(--bg)
 #stage{position:absolute;inset:0;overflow:hidden;font-family:MS,sans-serif;color:var(--ink);
  background:radial-gradient(120% 80% at 50% 35%,#F6F1E8 0%,#EFE8DC 55%,#E4DACB 100%)}
 #grain{position:absolute;inset:0;opacity:.35;background-image:radial-gradient(#d8ccb9 .7px,transparent .8px);background-size:12px 12px}
-.lab{position:absolute;left:18px;top:15px;font:600 9.5px 'DejaVu Sans Mono',monospace;color:#8a8070;letter-spacing:.2px}
-#dots{position:absolute;right:16px;top:13px;display:flex;gap:3px}
+.lab{position:absolute;left:18px;top:44px;font:600 9.5px 'DejaVu Sans Mono',monospace;color:#8a8070;letter-spacing:.2px}
+#dots{position:absolute;right:16px;top:42px;display:flex;gap:3px}
 #dots i{width:7px;height:7px;border-radius:50%;border:1.6px solid var(--ink);display:block}
 #dots i.on{background:var(--ink)} #dots i.cur{background:var(--red);border-color:var(--red)}
-.hl{position:absolute;left:18px;right:16px;top:36px;font:800 21px/1.22 MS;letter-spacing:-.2px}
+.hl{position:absolute;left:18px;right:16px;top:64px;font:800 21px/1.22 MS;letter-spacing:-.2px}
 .hl span{display:inline-block;white-space:pre;transform-origin:50% 70%}
 .hl .e,.hl b.e{font-weight:900;font-style:italic;color:var(--red)}
 .scene{position:absolute;inset:0}
@@ -42,9 +42,9 @@ html,body{margin:0;width:360px;height:640px;overflow:hidden;background:var(--bg)
 .big{font:900 italic 46px/1 MS;color:#fff;background:var(--red);border:4px solid var(--ink);border-radius:16px;box-shadow:5px 5px 0 var(--ink);padding:10px 18px;white-space:nowrap}
 </style></head><body><div id="stage"><div id="grain"></div><div id="scenes"></div>
 <div id="phones" style="position:absolute;inset:0;display:none">
- <div class="ph" id="ph0" style="left:18px;top:214px"><div class="scr"></div></div>
- <div class="ph" id="ph1" style="left:132px;top:202px"><div class="scr"></div></div>
- <div class="ph" id="ph2" style="left:246px;top:214px"><div class="scr"></div></div>
+ <div class="ph" id="ph0" style="left:18px;top:218px"><div class="scr"></div></div>
+ <div class="ph" id="ph1" style="left:132px;top:210px"><div class="scr"></div></div>
+ <div class="ph" id="ph2" style="left:246px;top:218px"><div class="scr"></div></div>
 </div>
 <div id="dots"></div>
 <svg id="cat" viewBox="0 0 360 640" width="360" height="640" stroke="#1d1d2b" stroke-width="5" stroke-linejoin="round" stroke-linecap="round">
