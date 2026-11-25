@@ -463,6 +463,49 @@ def render_big(pt, word, acc):
     return img
 
 
+def render_stats(pt, header, stats, shown, acc):
+    """Кейс карточкасы: тақырып-плашка + цифрлар (shown — қаншасы көрінеді)."""
+    from PIL import Image, ImageDraw
+    Wc = 920
+    rows = []
+    for st in stats[:shown]:
+        px = 150
+        f = pt.font(px, 900)
+        while f.getlength(st["value"]) > Wc - 80 and px > 70:
+            px -= 6
+            f = pt.font(px, 900)
+        rows.append((st, f, px))
+    hf = pt.font(46, 900)
+    hh = 96 if header else 0
+    total = hh + sum(int(px * 1.05) + 70 for _, _, px in rows) + 30
+    img = Image.new("RGBA", (Wc, max(total, 10)), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    y = 0
+    if header:
+        tw = hf.getlength(header)
+        d.rounded_rectangle([(Wc - tw) / 2 - 34, 0, (Wc + tw) / 2 + 34, 80], 40, fill=acc + (255,))
+        d.text((Wc / 2, 40), header, font=hf, fill=(12, 16, 32, 255), anchor="mm")
+        y = hh + 10
+    lf = pt.font(40, 700)
+    for st, f, px in rows:
+        d.text((Wc / 2, y + 22), st.get("label", ""), font=lf, fill=(235, 238, 245, 255), anchor="mm",
+               stroke_width=3, stroke_fill=(0, 0, 0, 160))
+        d.text((Wc / 2, y + 52 + px * 0.5), st["value"], font=f, fill=acc + (255,), anchor="mm",
+               stroke_width=6, stroke_fill=(0, 0, 0, 170))
+        y += int(px * 1.05) + 70
+    return img
+
+
+def render_handle(pt, text):
+    from PIL import Image, ImageDraw
+    f = pt.font(38, 700)
+    w = int(f.getlength(text)) + 20
+    img = Image.new("RGBA", (w, 60), (0, 0, 0, 0))
+    ImageDraw.Draw(img).text((10, 6), text, font=f, fill=(255, 255, 255, 220), stroke_width=3,
+                             stroke_fill=(0, 0, 0, 140))
+    return img
+
+
 def render_step(pt, num, title, acc):
     from PIL import Image, ImageDraw, ImageFilter
     img = Image.new("RGBA", (900, 420), (0, 0, 0, 0))
@@ -563,6 +606,27 @@ class Renderer:
         rng = np.random.default_rng(3)
         self.grain = (rng.standard_normal((H // 2, W // 2)) * 5).astype(np.float32)
         self.grain = np.repeat(np.repeat(self.grain, 2, 0), 2, 1)[:, :, None]
+        # сахна суреттері (кейс фоны): "image": "жол", "focus_x": 0..1
+        import cv2
+        self.photos = {}
+        for k, s in enumerate(self.scenes):
+            ip = s.sc.get("image")
+            if not ip:
+                continue
+            im = cv2.imread(ip)
+            if im is None:
+                M.die("сурет ашылмады: " + ip)
+            BW, BH = int(W * 1.16), int(H * 1.16)
+            sc = max(BW / im.shape[1], BH / im.shape[0])
+            im = cv2.resize(im, (int(im.shape[1] * sc + 1), int(im.shape[0] * sc + 1)), interpolation=cv2.INTER_CUBIC)
+            fx = float(s.sc.get("focus_x", 0.5))
+            x0 = int((im.shape[1] - BW) * fx)
+            y0 = (im.shape[0] - BH) // 2
+            self.photos[k] = im[y0:y0 + BH, x0:x0 + BW].copy()
+        yy = np.linspace(0, 1, H)[:, None, None]
+        self.shade = (0.62 - 0.30 * np.exp(-((yy - 0.18) ** 2) / 0.02) - 0.38 * np.clip((yy - 0.55) / 0.45, 0, 1)
+                      ).astype(np.float32)
+        self.shade = np.clip(self.shade, 0.18, 0.7)
 
     def background(self, t):
         import cv2
@@ -598,12 +662,47 @@ class Renderer:
         fr[y:y + 7, M.SAFE_L:M.SAFE_R] = (fr[y:y + 7, M.SAFE_L:M.SAFE_R] * 0.6 + 255 * 0.4 * 0.45).astype(np.uint8)
         fr[y:y + 7, M.SAFE_L:int(M.SAFE_L + (M.SAFE_R - M.SAFE_L) * k)] = self.acc[::-1]
         si, s = self.scene_at(t)
+        if self.plan.get("handle"):
+            hd = getattr(self, "_hd", None) or render_handle(self.pt, self.plan["handle"])
+            if not hasattr(self, "_hd"):
+                arr = np.asarray(hd, dtype=np.float32)
+                self._hd = (arr[:, :, :3][:, :, ::-1].copy(), arr[:, :, 3:] / 255.0)
+            self.blend(fr, self._hd, (W - self._hd[1].shape[1]) / 2, M.SAFE_T + 24, 1.0)
         if s is None:
             return fr
         st, en = s.tl["s"], s.tl["e"]
         fin = M.ease((t - st + 0.15) / 0.35)
         fout = 1 - M.ease((t - en) / (GAP * 0.6))
         al = fin * fout
+        if si in self.photos:
+            import cv2
+            ph = self.photos[si]
+            z = M.clamp((t - st + 0.15) / max(1.0, en - st + 0.5), 0, 1)
+            cw_, chh = int(ph.shape[1] * (1 - 0.13 * z)), int(ph.shape[0] * (1 - 0.13 * z))
+            x0, y0 = (ph.shape[1] - cw_) // 2, (ph.shape[0] - chh) // 2
+            img = cv2.resize(ph[y0:y0 + chh, x0:x0 + cw_], (W, H), interpolation=cv2.INTER_LINEAR).astype(np.float32)
+            img = img * self.shade + self.bg1 * (1 - self.shade) * 0.55
+            pa = M.ease((t - st + 0.15) / 0.3) * (1 - M.ease((t - en) / (GAP * 0.6)))
+            fr = (fr.astype(np.float32) * (1 - pa) + img * pa).clip(0, 255).astype(np.uint8)
+            y = M.SAFE_T + 4
+            fr[y:y + 7, M.SAFE_L:int(M.SAFE_L + (M.SAFE_R - M.SAFE_L) * k)] = self.acc[::-1]
+            if self.plan.get("handle"):
+                self.blend(fr, self._hd, (W - self._hd[1].shape[1]) / 2, M.SAFE_T + 24, 1.0)
+        if s.sc.get("stats"):
+            sts = s.sc["stats"]
+            n = 0
+            for j, stt in enumerate(sts):
+                key = (stt.get("at") or "").lower()
+                tt = None
+                if key:
+                    tt = next((w["s"] for w in s.items if key in M.disp(w["w"]).lower()), None)
+                if tt is None:
+                    tt = st + (en - st) * j / max(1, len(sts)) * 0.8
+                if t + 0.05 >= tt:
+                    n = j + 1
+            n = max(1, n)
+            im = s.get(("stats", n), lambda n=n: render_stats(self.pt, s.sc.get("header", ""), sts, n, acc_ := self.acc))
+            self.blend(fr, im, (W - im[1].shape[1]) / 2, 320 + (1 - fin) * 40, al)
         dy = (1 - fin) * 50
         shown = max(1, sum(1 for w in s.items if w["s"] <= t + 0.04))
         acc = self.acc
@@ -617,6 +716,8 @@ class Renderer:
                 pop = M.ease((t - st) / 0.4)
                 self.blend(fr, im, (W - 900) / 2, 330 + (1 - pop) * 60, al * pop)
                 cy = 1130
+            elif s.sc.get("stats"):
+                cy = 1330
             else:
                 big = s.sc.get("big") or next((M.disp(w["w"]).upper() for w in s.items if w["a"]), None)
                 if big:
